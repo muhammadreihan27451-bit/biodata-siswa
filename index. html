@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Biodata Siswa</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: Arial, sans-serif;
+      background: #f1f5f9;
+      color: #172033;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
+    h1 { color: #2563eb; }
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 14px;
+      box-shadow: 0 4px 15px #0001;
+      overflow-x: auto;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      white-space: nowrap;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    th { background: #dbeafe; }
+    #status { color: #475569; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📚 Biodata Siswa</h1>
+    <p>Data siswa sekolah</p>
+
+    <div class="card">
+      <input id="cari" type="search"
+        placeholder="Cari nama atau NIS...">
+
+      <p id="status">Memuat data siswa...</p>
+
+      <table>
+        <thead id="kepala"></thead>
+        <tbody id="isi"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://pjvqzsfuoiugxptyabdd.supabase.co/rest/v1/";
+    const SUPABASE_ANON_KEY = "‎sb_publishable_olSfZpd3Wbe0YIUx7kwkPQ_iEOob3QR
+‎";
+
+    const db = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY
+    );
+
+    let semuaSiswa = [];
+
+    function tampilkan(data) {
+      const kepala = document.getElementById("kepala");
+      const isi = document.getElementById("isi");
+
+      kepala.replaceChildren();
+      isi.replaceChildren();
+
+      if (!data.length) {
+        document.getElementById("status").textContent =
+          "Data siswa tidak ditemukan.";
+        return;
+      }
+
+      const kolom = Object.keys(data[0]).filter(
+        k => k !== "id"
+      );
+
+      const barisJudul = document.createElement("tr");
+
+      kolom.forEach(k => {
+        const th = document.createElement("th");
+        th.textContent = k;
+        barisJudul.appendChild(th);
+      });
+
+      kepala.appendChild(barisJudul);
+
+      data.forEach(siswa => {
+        const tr = document.createElement("tr");
+
+        kolom.forEach(k => {
+          const td = document.createElement("td");
+          td.textContent = siswa[k] ?? "-";
+          tr.appendChild(td);
+        });
+
+        isi.appendChild(tr);
+      });
+
+      document.getElementById("status").textContent =
+        "Total " + data.length + " siswa ditampilkan.";
+    }
+
+    async function muatData() {
+      const status = document.getElementById("status");
+
+      try {
+        const { data, error } = await db
+          .from("siswa")
+          .select("*")
+          .order("nama");
+
+        if (error) throw error;
+
+        semuaSiswa = data || [];
+        tampilkan(semuaSiswa);
+      } catch (error) {
+        status.textContent =
+          "Gagal memuat data. Periksa URL, API key, " +
+          "dan izin SELECT (RLS) tabel siswa.";
+        console.error(error);
+      }
+    }
+
+    document.getElementById("cari").addEventListener(
+      "input", function () {
+        const kata = this.value.toLowerCase();
+
+        tampilkan(semuaSiswa.filter(s =>
+          Object.values(s).some(v =>
+            String(v ?? "").toLowerCase().includes(kata)
+          )
+        ));
+      }
+    );
+
+    muatData();
+  </script>
+</body>
+</html>
